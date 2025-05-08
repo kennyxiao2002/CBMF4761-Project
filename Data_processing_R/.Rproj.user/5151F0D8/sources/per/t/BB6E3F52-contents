@@ -1,0 +1,69 @@
+library(dplyr)
+library(stringr)
+
+# --- Step 1: Load Supplementary Data 2 (gRNA annotation) ---
+df_supp2 <- read.csv("41587_2023_1830_MOESM4_ESM.csv", stringsAsFactors = FALSE)
+
+# Create a composite key new_ID by concatenating TargetGene and GuideID.
+df_supp2 <- df_supp2 %>% 
+  mutate(new_ID = paste(TargetGene, GuideID, sep = "_"))
+
+# --- Step 2: Load Supplementary Data 4 (depletion / activity) ---
+df_supp4 <- read.csv("41587_2023_1830_MOESM6_ESM.csv", stringsAsFactors = FALSE)
+
+# --- Step 3: Merge the two datasets ---
+# Merge by: new_ID (from Supp. Data 2) with GuideID (from Supp. Data 4)
+df_merged <- merge(df_supp2, df_supp4, by.x = "new_ID", by.y = "GuideID", all = TRUE)
+
+# --- Optional: inspect the merged data ---
+head(df_merged)
+str(df_merged)
+
+# === Step 5: Select and rename columns for the final training dataset ===
+df_model <- df_merged %>%
+  dplyr::select(
+    GuideID,
+    GuideSeq,
+    TargetGene,
+    Log2FC.D30,           # Experimental activity (e.g., depletion score)
+  ) %>%
+  dplyr::rename(
+    guide_sequence = GuideSeq,
+    target_gene = TargetGene,
+  )
+
+# === Export the final dataset ===
+write.csv(df_model, "gRNA_activity_model_data_with_transcripts.csv", row.names = FALSE)
+df_cdna <- read.csv("cDNA_off_target.csv", stringsAsFactors = FALSE)
+
+# Step 1: Extract positions from GuideID
+df_merged_parsed <- df_merged %>%
+  mutate(
+    pos_info = str_extract(GuideID, "\\d+-\\d+"),             # Extract "1046:1068"
+    pos_start = as.numeric(str_extract(pos_info, "^\\d+")),   # Extract start
+    pos_end = as.numeric(str_extract(pos_info, "\\d+$"))      # Extract end
+  )
+
+# Step 2: Join with cDNA dictionary
+df_merged_parsed <- df_merged_parsed %>%
+  left_join(dplyr::select(df_cdna, gene_name, cdna),
+            by = c("TargetGene" = "gene_name"))
+
+# Step 3: Extract the sequence from cDNA
+df_merged_parsed <- df_merged_parsed %>%
+  dplyr::mutate(
+    TargetSeqContext = ifelse(!is.na(cdna) & !is.na(pos_start) & !is.na(pos_end),
+                              substr(cdna, pos_start, pos_end),
+                              NA)
+  )
+df_aaa <- df_merged_parsed %>%
+  dplyr::select(
+    TargetGene,
+    GuideID,
+    GuideSeq,
+    end,
+    start,
+    Log2FC.D15,
+    Log2FC.D30,
+    TargetSeqContext)
+write.csv(df_aaa, "off_target_activity.csv", row.names = FALSE)

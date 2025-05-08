@@ -1,0 +1,13 @@
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+if (!requireNamespace("Biostrings", quietly = TRUE))
+  BiocManager::install("Biostrings")
+if (!requireNamespace("biomaRt", quietly = TRUE))
+  BiocManager::install("biomaRt")
+if (!require("dplyr")) install.packages("dplyr")
+if (!require("stringr")) install.packages("stringr")
+
+library(Biostrings)
+library(biomaRt)
+library(dplyr)
+library(stringr)

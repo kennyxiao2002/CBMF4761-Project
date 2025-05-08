@@ -1,0 +1,65 @@
+# === Step 0: Install and load required packages ===
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+if (!requireNamespace("Biostrings", quietly = TRUE))
+  BiocManager::install("Biostrings")
+if (!requireNamespace("biomaRt", quietly = TRUE))
+  BiocManager::install("biomaRt")
+if (!require("dplyr")) install.packages("dplyr")
+if (!require("stringr")) install.packages("stringr")
+
+library(Biostrings)
+library(biomaRt)
+library(dplyr)
+library(stringr)
+
+# === Step 1: Read Supplementary Data 1 with corrected header ===
+# Read the CSV file without header so we can fix it manually.
+df_supp1_raw <- read.csv("41587_2023_1830_MOESM3_ESM.csv")
+# Set the first row as column names
+colnames(df_supp1_raw) <- df_supp1_raw[1, ]
+# Remove the first row (now used as header)
+df_supp1 <- df_supp1_raw[-1, ]
+print(names(df_supp1))
+# Expected columns include: "GuideID", "TargetGene", "transcript_id", "Exon", "MatchPos", "TargetSeqContext", etc.
+
+# === Step 2: Prepare Transcript IDs and Remove Version Numbers ===
+# (Assuming the column name is "transcript_id")
+transcript_ids <- unique(df_supp1$transcript_id)
+transcript_ids <- transcript_ids[!is.na(transcript_ids) & transcript_ids != ""]
+# Remove version suffix: e.g., "ENST00000000412.3" becomes "ENST00000000412"
+transcript_ids_clean <- sub("\\..*", "", transcript_ids)
+
+# === Step 3: Retrieve Full Transcript (cDNA) Sequences via biomaRt ===
+# Set up connection to Ensembl for human transcripts.
+ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+# Use getBM() to query attributes "ensembl_transcript_id" and "cdna"
+transcript_seqs <- getBM(
+  attributes = c("ensembl_transcript_id", "cdna"),
+  filters    = "ensembl_transcript_id",
+  values     = transcript_ids_clean,
+  mart       = ensembl
+)
+head(transcript_seqs)  # Inspect to verify the fields "ensembl_transcript_id" and "cdna" are returned
+
+# === Step 4: Merge Retrieved Transcript Sequences into Supp. Data 1 ===
+# Create a cleaned transcript ID column in df_supp1.
+df_supp1 <- df_supp1 %>%
+  mutate(transcript_id_clean = sub("\\..*", "", transcript_id))
+# Merge the cDNA sequences with df_supp1 based on the cleaned transcript ID.
+df_supp1 <- left_join(df_supp1, transcript_seqs,
+                      by = c("transcript_id_clean" = "ensembl_transcript_id"))
+
+# Assuming your full df_supp1 already contains these columns:
+# - gene name (usually 'TargetGene' or 'GeneName')
+# - transcript ID ('transcript_id')
+# - cDNA sequence ('cdna')
+
+# If your gene name column is named `TargetGene`, use this:
+df_supp1_reduced <- df_supp1 %>%
+  dplyr::select(gene_name, transcript_id, cdna) %>%
+  dplyr::distinct()
+
+write.csv(df_supp1_reduced, "cDNA_reference_off_target.csv", row.names = FALSE)
+
+

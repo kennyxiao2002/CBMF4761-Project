@@ -1,0 +1,26 @@
+library(dplyr)
+
+# === Step 1: Load Data ===
+
+# Load Supplementary Data 9 (MOESM12)
+df_supp9 <- read.delim("41587_2023_1830_MOESM12_ESM.txt", header = TRUE, sep = "\t")
+
+# Load Supplementary Data 12 (MOESM15)
+df_supp12 <- read.delim("41587_2023_1830_MOESM15_ESM.txt", header = TRUE, sep = "\t")
+
+# === Step 2: Check column names carefully ===
+colnames(df_supp9)
+colnames(df_supp12)
+
+# Suppose df_supp9 has the column "UID" and df_supp12 has "GuideUID"
+# Rename UID in df_supp9 to match df_supp12
+colnames(df_supp9)[1] <- "GuideUID" 
+
+# Verify the renaming is correct:
+colnames(df_supp9)
+
+# === Step 3: Perform merge by GuideUID ===
+df <- dplyr::inner_join(df_supp9, df_supp12, by = "GuideUID")
+
+# Select key columns clearly
+df_off_target <- df_off_target[, c("GeneName", "ID", "GuideSeq.x", "TargetSeqContext", "Observed.log2FC.D14")]

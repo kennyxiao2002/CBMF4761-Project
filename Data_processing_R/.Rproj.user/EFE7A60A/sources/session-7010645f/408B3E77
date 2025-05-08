@@ -1,0 +1,27 @@
+{
+    "id": "408B3E77",
+    "path": "~/Downloads/CBMF4761/off_target_data_processing.R",
+    "project_path": "off_target_data_processing.R",
+    "type": "r_source",
+    "hash": "1266721108",
+    "contents": "",
+    "dirty": false,
+    "created": 1746685777832.0,
+    "source_on_save": false,
+    "relative_order": 7,
+    "properties": {
+        "tempName": "Untitled3",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "97,18",
+        "scrollLine": "88"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1746688397,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1746688397431,
+    "read_only": false,
+    "read_only_alternatives": []
+}

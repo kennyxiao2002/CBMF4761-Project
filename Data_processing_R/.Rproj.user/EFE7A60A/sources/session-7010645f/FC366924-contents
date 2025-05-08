@@ -1,0 +1,24 @@
+# Step 1: Extract and clean transcript IDs
+df_transcripts <- df_on_target_pm %>%
+  dplyr::select(TargetGene, transcript_ID) %>%  # Use dplyr::select to avoid namespace issues
+  distinct() %>%
+  mutate(transcript_id_clean = sub("\\..*", "", transcript_ID))
+# Step 2: Connect to Ensembl and retrieve cDNA sequences
+ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+
+transcript_seqs <- getBM(
+  attributes = c("ensembl_transcript_id", "cdna"),
+  filters    = "ensembl_transcript_id",
+  values     = df_transcripts$transcript_id_clean,
+  mart       = ensembl
+)
+
+# Step 3: Merge cDNA sequences back into the gene list
+df_cDNA_on_target <- df_transcripts %>%
+  dplyr::left_join(transcript_seqs,
+                   by = c("transcript_id_clean" = "ensembl_transcript_id")) %>%
+  dplyr::select(TargetGene, transcript_ID, cdna)  # use dplyr::select explicitly
+
+
+# Step 4: Export to CSV
+write.csv(df_cDNA_on_target, "cDNA_on_target.csv", row.names = FALSE)
