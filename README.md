@@ -1,19 +1,31 @@
 # CBMF4761-Project
-| Path / file            | Purpose                                                                                                                                                                               |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **`data_processing/`** | Scripts & raw data needed to reproducibly build the training/validation dataset.                                                                                                      |
-| `├── build_dataset.R`  | **R** script that ingests the original tiling‑screen CSVs, filters indels, labels guide types (PM/SM/DM/TM), performs gene‑wise split and writes `cas13d_dataset.csv`.                |
-| `├── raw/`             | Original files from **Wessels *et al.* 2023** (HEK‑293 & HAP1 screens).                                                                                                               |
-| **`CNN.ipynb`**        | Colab / Jupyter notebook that trains and evaluates the shallow and deep CNN baselines (0.6 M–2 M parameters).                                                                         |
-| **`RNN.ipynb`**        | Notebook with CNN + BiLSTM + self‑attention, Transformer encoder variants, encoder–decoder cross‑attention model, plus Integrated‑Gradients interpretability & calibration utilities. |
-| `README.md`            | You are here.                                                                                                                                                                         |
+# Project Structure & File Descriptions
+# Data_processing_R                                                                                                                                                      
+| File                                                       | Description                                                                                                                                                              |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `41587_2023_1830_MOESM3_ESM.csv` to `MOESM16_ESM.csv/.txt` | Supplementary data files from the *Nature Biotech* TIGER paper. Includes gRNA annotations, sequence contexts, off-target mismatches, and experimental activity (log₂FC). |
+| `on_target_data_processing.R`                              | R script to load and clean on-target guide data, including filtering for perfect-match guides and joining with target metadata.                                          |
+| `off_target_data_processing.R`                             | Processes and filters mismatch-containing off-target guides (SM, DM, TM), including alignment and subtype classification.                                                |
+| `combine_on_off_data.R`                                    | Merges on-target and off-target datasets into one unified CSV used in model training.                                                                                    |
+| `library.R`                                                | Shared utility functions (e.g., file loaders, sequence matchers).                                                                                                        |
+| `variance_by_biological_factors.R`                         | Analyzes contribution of known biological features (e.g. mfe, accessibility) to guide activity variance.                                                                 |
+| `CBMF4761.Rproj`                                           | RStudio project file for reproducibility and version control within RStudio.                                                                                             |
+
+# Jupyter Notebooks
+| Notebook            | Purpose                                                                                                                                                                                                 |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CNN.ipynb`         | Trains and evaluates shallow and deep **Convolutional Neural Networks** (CNNs) on guide activity prediction. Useful as a baseline.                                                                      |
+| `RNN.ipynb`         | Implements **BiLSTM** (bidirectional LSTM) and CNN+RNN hybrid architectures with self-attention. Includes Integrated Gradients interpretation and performance plots.                                    |
+| `Transformer.ipynb` | Implements Transformer encoder-only and encoder–decoder models, with alignment-based input preparation and optional cross-attention between guide and target. Best performance among all tested models. |
 
 # Quick start
 Run the R script in the folder Data_processing_R to obtain the dataset used for training, and the rest can all be done on google colab, by downloading and running all the ipynb files on colab.
 
 # Requirements
 GPU is optional but recommended.Training the largest Transformer (~1.5M parameters) takes ~5min on an RTX3060; ~45min on CPU.
+
 Package "captum" may be required to download, if error exists "no module named captum". 
+
 Running notebooks on large files / custom data
 1.Place your FASTA / screening summary as my_guides.csv with columns TargetSeqContext, GuideSeq, log2FC, TargetGene. 
 2.Open CNN/RNN/Transformer.ipynb → “Replace dataset” cell → change path to your file.
